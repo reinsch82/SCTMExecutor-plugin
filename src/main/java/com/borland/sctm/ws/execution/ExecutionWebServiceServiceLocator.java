@@ -22,8 +22,9 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
     }
 
     // Use to get a proxy class for tmexecution
-    private java.lang.String tmexecution_address = "http://10.5.2.6/Services1.0/services/tmexecution";
+    private java.lang.String tmexecution_address = "http://localhost:19120/Services1.0/services/tmexecution";
 
+    @Override
     public java.lang.String gettmexecutionAddress() {
         return tmexecution_address;
     }
@@ -39,6 +40,7 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
         tmexecutionWSDDServiceName = name;
     }
 
+    @Override
     public com.borland.sctm.ws.execution.ExecutionWebService gettmexecution() throws javax.xml.rpc.ServiceException {
        java.net.URL endpoint;
         try {
@@ -50,6 +52,7 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
         return gettmexecution(endpoint);
     }
 
+    @Override
     public com.borland.sctm.ws.execution.ExecutionWebService gettmexecution(java.net.URL portAddress) throws javax.xml.rpc.ServiceException {
         try {
             com.borland.sctm.ws.execution.TmexecutionSoapBindingStub _stub = new com.borland.sctm.ws.execution.TmexecutionSoapBindingStub(portAddress, this);
@@ -70,6 +73,7 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
      * If this service has no port for the given interface,
      * then ServiceException is thrown.
      */
+    @Override
     public java.rmi.Remote getPort(Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
         try {
             if (com.borland.sctm.ws.execution.ExecutionWebService.class.isAssignableFrom(serviceEndpointInterface)) {
@@ -89,6 +93,7 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
      * If this service has no port for the given interface,
      * then ServiceException is thrown.
      */
+    @Override
     public java.rmi.Remote getPort(javax.xml.namespace.QName portName, Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
         if (portName == null) {
             return getPort(serviceEndpointInterface);
@@ -104,16 +109,18 @@ public class ExecutionWebServiceServiceLocator extends org.apache.axis.client.Se
         }
     }
 
+    @Override
     public javax.xml.namespace.QName getServiceName() {
-        return new javax.xml.namespace.QName("http://tm.segue.com/webservices/tmexecution   ", "ExecutionWebServiceService");
+        return new javax.xml.namespace.QName("http://tm.segue.com/webservices/tmexecution", "ExecutionWebServiceService");
     }
 
     private java.util.HashSet ports = null;
 
+    @Override
     public java.util.Iterator getPorts() {
         if (ports == null) {
             ports = new java.util.HashSet();
-            ports.add(new javax.xml.namespace.QName("http://tm.segue.com/webservices/tmexecution   ", "tmexecution"));
+            ports.add(new javax.xml.namespace.QName("http://tm.segue.com/webservices/tmexecution", "tmexecution"));
         }
         return ports.iterator();
     }

@@ -87,27 +87,35 @@ public class ExecutionNode  implements java.io.Serializable {
     }
 
     private java.lang.Object __equalsCalc = null;
+    @Override
     public synchronized boolean equals(java.lang.Object obj) {
-        if (!(obj instanceof ExecutionNode)) return false;
+        if (!(obj instanceof ExecutionNode)) {
+          return false;
+        }
         ExecutionNode other = (ExecutionNode) obj;
-        if (obj == null) return false;
-        if (this == obj) return true;
+        if (obj == null) {
+          return false;
+        }
+        if (this == obj) {
+          return true;
+        }
         if (__equalsCalc != null) {
             return (__equalsCalc == obj);
         }
         __equalsCalc = obj;
         boolean _equals;
-        _equals = true && 
-            this.id == other.getId() &&
-            this.kind == other.getKind() &&
-            ((this.propertyValues==null && other.getPropertyValues()==null) || 
-             (this.propertyValues!=null &&
-              java.util.Arrays.equals(this.propertyValues, other.getPropertyValues())));
+        _equals = true &&
+            id == other.getId() &&
+            kind == other.getKind() &&
+            ((propertyValues==null && other.getPropertyValues()==null) ||
+             (propertyValues!=null &&
+              java.util.Arrays.equals(propertyValues, other.getPropertyValues())));
         __equalsCalc = null;
         return _equals;
     }
 
     private boolean __hashCodeCalc = false;
+    @Override
     public synchronized int hashCode() {
         if (__hashCodeCalc) {
             return 0;
@@ -168,10 +176,10 @@ public class ExecutionNode  implements java.io.Serializable {
      * Get Custom Serializer
      */
     public static org.apache.axis.encoding.Serializer getSerializer(
-           java.lang.String mechType, 
-           java.lang.Class _javaType,  
+           java.lang.String mechType,
+           java.lang.Class _javaType,
            javax.xml.namespace.QName _xmlType) {
-        return 
+        return
           new  org.apache.axis.encoding.ser.BeanSerializer(
             _javaType, _xmlType, typeDesc);
     }
@@ -180,10 +188,10 @@ public class ExecutionNode  implements java.io.Serializable {
      * Get Custom Deserializer
      */
     public static org.apache.axis.encoding.Deserializer getDeserializer(
-           java.lang.String mechType, 
-           java.lang.Class _javaType,  
+           java.lang.String mechType,
+           java.lang.Class _javaType,
            javax.xml.namespace.QName _xmlType) {
-        return 
+        return
           new  org.apache.axis.encoding.ser.BeanDeserializer(
             _javaType, _xmlType, typeDesc);
     }

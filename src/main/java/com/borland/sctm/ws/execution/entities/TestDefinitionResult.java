@@ -255,6 +255,7 @@ public class TestDefinitionResult  implements java.io.Serializable {
     }
 
     private java.lang.Object __equalsCalc = null;
+    @Override
     public synchronized boolean equals(java.lang.Object obj) {
         if (!(obj instanceof TestDefinitionResult)) return false;
         TestDefinitionResult other = (TestDefinitionResult) obj;
@@ -285,6 +286,7 @@ public class TestDefinitionResult  implements java.io.Serializable {
     }
 
     private boolean __hashCodeCalc = false;
+    @Override
     public synchronized int hashCode() {
         if (__hashCodeCalc) {
             return 0;

@@ -1,5 +1,10 @@
 package com.borland.sctm.ws.execution;
 
+import java.rmi.RemoteException;
+
+import com.borland.sctm.ws.execution.entities.ManualTester;
+import com.borland.sctm.ws.execution.entities.NodeParameter;
+
 public class ExecutionWebServiceProxy implements com.borland.sctm.ws.execution.ExecutionWebService {
   private String _endpoint = null;
   private com.borland.sctm.ws.execution.ExecutionWebService executionWebService = null;
@@ -162,6 +167,41 @@ public class ExecutionWebServiceProxy implements com.borland.sctm.ws.execution.E
     if (executionWebService == null)
       _initExecutionWebServiceProxy();
     return executionWebService.getStateOfExecution(sessionId, handle);
+  }
+
+  @Override
+  public NodeParameter[] getParameters(long sessionId, int execNodeId) throws RemoteException {
+    return executionWebService.getParameters(sessionId, execNodeId);
+  }
+
+  @Override
+  public void setParameter(long sessionId, int execNodeId, String parameterName, String parameterValue) throws RemoteException {
+    executionWebService.setParameter(sessionId, execNodeId, parameterName, parameterValue);
+  }
+
+  @Override
+  public void updateTestRunStatus(long sessionId, int testRunId, int newStatus, String newStatusReason, String statusChangeComment) throws RemoteException {
+    executionWebService.updateTestRunStatus(sessionId, testRunId, newStatus, newStatusReason, statusChangeComment);    
+  }
+
+  @Override
+  public String[] getKeywords(long sessionId, int execNodeId) throws RemoteException {
+    return executionWebService.getKeywords(sessionId, execNodeId);
+  }
+
+  @Override
+  public void setKeywords(long sessionId, int execNodeId, String[] keywords) throws RemoteException {
+    executionWebService.setKeywords(sessionId, execNodeId, keywords);
+  }
+
+  @Override
+  public ManualTester[] getAssignedManualTesters(long sessionId, int execDefId) throws RemoteException {
+    return executionWebService.getAssignedManualTesters(sessionId, execDefId);
+  }
+
+  @Override
+  public void setAssignedManualTesters(long sessionId, int execDefId, int[] manualTesterIds) throws RemoteException {
+    executionWebService.setAssignedManualTesters(sessionId, execDefId, manualTesterIds);
   }
   
   
