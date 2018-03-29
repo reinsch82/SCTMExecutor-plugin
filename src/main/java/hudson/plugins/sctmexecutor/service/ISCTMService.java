@@ -26,13 +26,14 @@ public interface ISCTMService {
   public int getLatestSCTMBuildnumber(int nodeId) throws SCTMException;
 
   public String getExecDefinitionName(int execDefId) throws SCTMException;
-  
+
   public SPNamedEntity[] getResultFiles(int testDefRunId) throws SCTMException;
-  
+
   public InputStream loadResultFile(int fileId);
 
   public Collection<String> getAllVersions(int execDefId) throws SCTMException;
 
   public String getProductName(int integer) throws SCTMException;
 
+  int getBranchExecutionId(String branchName, int configurationSuiteId) throws SCTMException;
 }

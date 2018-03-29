@@ -28,9 +28,9 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 /**
- * 
+ *
  * @author Thomas Fuerer
- * 
+ *
  */
 @Symbol("silkcentral")
 @Extension
@@ -59,7 +59,9 @@ public final class SCTMExecutorDescriptor extends BuildStepDescriptor<Builder> {
     sctmExecutor.setContOnErr(formData.getBoolean("continueOnError"));
     sctmExecutor.setCollectResults(formData.getBoolean("collectResults"));
     sctmExecutor.setIgnoreSetupCleanup(formData.getBoolean("ignoreSetupCleanup"));
-    
+    sctmExecutor.setUseBranchName(formData.getBoolean("useBranchName"));
+    sctmExecutor.setBranchName(formData.getString("branchName"));
+
     // optValue, jobName
     JSONObject useSpecificInstanceForm = (JSONObject) formData.get("useSpecificInstance"); //$NON-NLS-1$
     if (useSpecificInstanceForm != null) {
@@ -68,7 +70,7 @@ public final class SCTMExecutorDescriptor extends BuildStepDescriptor<Builder> {
       sctmExecutor.setSpecificUser(useSpecificInstanceForm.getString("specificUser"));
       sctmExecutor.setSpecificPassword(useSpecificInstanceForm.getString("specificPassword"));
     }
-    
+
     JSONObject buildNumberUsageJson = (JSONObject) formData.get("buildNumberUsageOption"); //$NON-NLS-1$
     int buildNumberUsageOption;
     if (buildNumberUsageJson == null) {
@@ -164,11 +166,11 @@ public final class SCTMExecutorDescriptor extends BuildStepDescriptor<Builder> {
       @QueryParameter("value") final String value) {
     return new EmptySingleFieldValidator().check(value);
   }
-  
+
   public FormValidation doCheckSpecificUser(StaplerRequest req, StaplerResponse rsp, @QueryParameter("value") final String value) {
     return new EmptySingleFieldValidator().check(value);
   }
-  
+
   public FormValidation doCheckSpecificPassword(StaplerRequest req, StaplerResponse rsp,
       @QueryParameter("value") final String value) {
     return new EmptySingleFieldValidator().check(value);
@@ -194,7 +196,7 @@ public final class SCTMExecutorDescriptor extends BuildStepDescriptor<Builder> {
       @QueryParameter("password") final String password) {
     return new TestConnectionValidator().check(serviceURL, user, password);
   }
-  
+
   public FormValidation doTestSpecificConnection(StaplerRequest req, StaplerResponse rsp,
       @QueryParameter("specificServiceURL") final String serviceURL, @QueryParameter("specificUser") final String user,
       @QueryParameter("specificPassword") final String password) {

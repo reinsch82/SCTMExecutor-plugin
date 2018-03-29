@@ -16,16 +16,16 @@ public class SCTMReRunProxy implements ISCTMService {
   static final int MAXRERUN = 2;
   private final ISCTMService target;
   private static final Logger LOGGER = Logger.getLogger("hudson.plugins.sctmexecutor.sctmservice"); //$NON-NLS-1$
-  
+
   public SCTMReRunProxy(ISCTMService target) {
     this.target = target;
   }
-  
+
   @Override
   public ExecutionResult getExecutionResult(ExecutionHandle handle) throws SCTMException {
     return doGetExecutionResult(handle, MAXRERUN);
   }
-  
+
   private ExecutionResult doGetExecutionResult(ExecutionHandle handle, int tryCount) throws SCTMException {
     try {
       return target.getExecutionResult(handle);
@@ -48,7 +48,7 @@ public class SCTMReRunProxy implements ISCTMService {
   public boolean isFinished(ExecutionHandle handle) throws SCTMException {
     return doIsFinished(handle, MAXRERUN);
   }
-  
+
   private boolean doIsFinished(ExecutionHandle handle, int tryCount) throws SCTMException {
     try {
       return target.isFinished(handle);
@@ -71,7 +71,7 @@ public class SCTMReRunProxy implements ISCTMService {
   public Collection<ExecutionHandle> start(int executionId) throws SCTMException {
     return doStart(executionId, MAXRERUN);
   }
-  
+
   private Collection<ExecutionHandle> doStart(int executionId, int tryCount) throws SCTMException {
     try {
       return target.start(executionId);
@@ -94,7 +94,7 @@ public class SCTMReRunProxy implements ISCTMService {
   public Collection<ExecutionHandle> start(int executionId, String buildNumber) throws SCTMException {
     return doStart(executionId, buildNumber, MAXRERUN);
   }
-  
+
   private Collection<ExecutionHandle> doStart(int executionId, String buildNumber, int tryCount) throws SCTMException {
     try {
       return target.start(executionId, buildNumber);
@@ -162,7 +162,7 @@ public class SCTMReRunProxy implements ISCTMService {
   public int getLatestSCTMBuildnumber(int nodeId) throws SCTMException {
     return doGetLatestSCTMBuildnumber(nodeId, MAXRERUN);
   }
-  
+
   private int doGetLatestSCTMBuildnumber(int nodeId, int tryCount) throws SCTMException {
     try {
       return target.getLatestSCTMBuildnumber(nodeId);
@@ -236,7 +236,7 @@ public class SCTMReRunProxy implements ISCTMService {
   public SPNamedEntity[] getResultFiles(int testDefRunId) throws SCTMException {
     return doGetResultFiles(testDefRunId, MAXRERUN);
   }
-  
+
   private String doGetProductName(int nodeId, int tryCount) throws SCTMException {
     try {
       return target.getProductName(nodeId);
@@ -254,7 +254,7 @@ public class SCTMReRunProxy implements ISCTMService {
       }
     }
   }
-  
+
   private SPNamedEntity[] doGetResultFiles(int testDefRunId, int tryCount) throws SCTMException {
     try {
       return target.getResultFiles(testDefRunId);
@@ -276,5 +276,10 @@ public class SCTMReRunProxy implements ISCTMService {
   @Override
   public InputStream loadResultFile(int fileId) {
     return target.loadResultFile(fileId); // TODO: check if retry logic is needed
+  }
+
+  @Override
+  public int getBranchExecutionId(String branchName, int configurationSuiteId) throws SCTMException {
+    return target.getBranchExecutionId(branchName, configurationSuiteId);
   }
 }

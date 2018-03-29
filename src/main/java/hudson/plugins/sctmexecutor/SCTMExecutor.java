@@ -10,6 +10,9 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -19,6 +22,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
+import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.Cause.UpstreamCause;
@@ -33,9 +37,9 @@ import jenkins.tasks.SimpleBuildStep;
 
 /**
  * Executes a specified execution plan on Micro Focus Silk Central.
- * 
+ *
  * @author Thomas Fuerer
- * 
+ *
  */
 public final class SCTMExecutor extends Builder implements SimpleBuildStep {
   static final int OPT_NO_BUILD_NUMBER = 1;
@@ -56,6 +60,8 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
   private String specificServiceURL;
   private String specificUser;
   private Secret specificPassword;
+  private boolean useBranchName;
+  private String branchName;
 
   @DataBoundConstructor
   public SCTMExecutor(int projectId, String execDefIds) {
@@ -67,11 +73,29 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     contOnErr = false;
     collectResults = false;
     ignoreSetupCleanup = false;
-    
+
     useSpecificInstance = false;
     specificServiceURL = null;
     specificUser = null;
     specificPassword = null;
+  }
+
+  public boolean isUseBranchName() {
+    return useBranchName;
+  }
+
+  @DataBoundSetter
+  public void setUseBranchName(boolean useBranchName) {
+    this.useBranchName = useBranchName;
+  }
+
+  public String getBranchName() {
+    return branchName;
+  }
+
+  @DataBoundSetter
+  public void setBranchName(String branchName) {
+    this.branchName = branchName;
   }
 
   @DataBoundSetter
@@ -159,28 +183,28 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
   public boolean isCollectResults() {
     return collectResults;
   }
-  
+
   public boolean isUseSpecificInstance() {
     return useSpecificInstance;
   }
-  
+
   public String getSpecificServiceURL() {
     return specificServiceURL;
   }
-  
+
   public String getSpecificUser() {
     return specificUser;
   }
-  
+
   public String getSpecificPassword() {
     return Secret.toString(specificPassword);
   }
-  
+
   @Override
   public void perform(Run<?, ?> run, FilePath filePath, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
     perform(run, filePath, listener);
   }
-  
+
   @Override
   public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
       throws InterruptedException, IOException {
@@ -204,7 +228,8 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
         if (collectResults) {
           resultWriter = new SCTMResultWriter(resultDir, service, ignoreSetupCleanup);
         }
-        Runnable resultCollector = new ExecutionRunnable(service, execDefId, buildNumber, resultWriter, listener
+        int id = getTriggerId(service, getBranchName(build.getCauses()), execDefId);
+        Runnable resultCollector = new ExecutionRunnable(service, id, buildNumber, resultWriter, listener
             .getLogger());
 
         Thread t = new Thread(resultCollector);
@@ -229,6 +254,69 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     return contOnErr || succeed;
   }
 
+  private int getTriggerId(ISCTMService service, String branchName, Integer execDefId) throws SCTMException {
+    if (!branchName.isEmpty()) {
+      return service.getBranchExecutionId(branchName, execDefId);
+    }
+    return execDefId;
+  }
+
+  private String getBranchName(List<Cause> causes) {
+    if(!branchName.isEmpty()) {
+      return branchName;
+    }
+    if (isUseBranchName()) {
+      WorkflowJob workflowJob = getWorkflowJob(causes);
+      if (workflowJob != null) {
+        BranchJobProperty property = (BranchJobProperty) workflowJob.getProperty(BranchJobProperty.class.getName());
+        return property.getBranch().getName();
+      }
+    }
+    return "";
+  }
+
+  private WorkflowJob getWorkflowJob(List<Cause> causes) {
+    for (Cause cause : causes) {
+      if (cause instanceof UpstreamCause) {
+        UpstreamCause usCause = (UpstreamCause) cause;
+
+        Item itemByFullName = Jenkins.getInstance().getItemByFullName(usCause.getUpstreamProject());
+        if (itemByFullName instanceof WorkflowJob) {
+          WorkflowJob wfJob = (WorkflowJob) itemByFullName;
+
+          if (wfJob.getParent() instanceof WorkflowMultiBranchProject) {
+            return wfJob;
+          }
+        }
+        else {
+          return getWorkflowJob(usCause.getUpstreamCauses());
+        }
+      }
+    }
+    return null;
+  }
+
+  private int getWorkflowJobBuildNumber(List<Cause> causes) {
+    for (Cause cause : causes) {
+      if (cause instanceof UpstreamCause) {
+        UpstreamCause usCause = (UpstreamCause) cause;
+
+        Item itemByFullName = Jenkins.getInstance().getItemByFullName(usCause.getUpstreamProject());
+        if (itemByFullName instanceof WorkflowJob) {
+          WorkflowJob wfJob = (WorkflowJob) itemByFullName;
+
+          if (wfJob.getParent() instanceof WorkflowMultiBranchProject) {
+            return usCause.getUpstreamBuild();
+          }
+        }
+        else {
+          return getWorkflowJobBuildNumber(usCause.getUpstreamCauses());
+        }
+      }
+    }
+    return -1;
+  }
+
   private int getOrAddBuildNumber(Run<?, ?> build, TaskListener listener, int nodeId, ISCTMService service) throws SCTMException {
     switch (buildNumberUsageOption) {
     case OPT_USE_THIS_BUILD_NUMBER:
@@ -237,29 +325,36 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
       if (buildNumberUsageOption == OPT_USE_THIS_BUILD_NUMBER) {
         buildnumber = build.number;
       } else if (buildNumberUsageOption == OPT_USE_SPECIFICJOB_BUILDNUMBER) {
-        Map<AbstractProject, Integer> upstreamBuilds = null;
-        if (build instanceof AbstractBuild) {
-          upstreamBuilds = ((AbstractBuild)build).getUpstreamBuilds();
-        }
-        if(upstreamBuilds != null && !upstreamBuilds.isEmpty()){
-        	buildnumber = getBuildNumberFromUpStreamProject(jobName, upstreamBuilds , listener);
-        }
-        else {
-        	buildnumber = findTriggerInCauses(build.getCauses(), jobName);
-        }
+        buildnumber = getBuildNumberFromUpstreamBuild(build, listener);
       }
+
       try {
         service.addBuildNumberIfNotExists(nodeId, buildnumber);
+        return buildnumber;
+
       } catch (IllegalArgumentException e) {
         listener.error(e.getMessage());
-        buildnumber = -1;
+        return -1;
       }
-      return buildnumber;
     case OPT_USE_LATEST_SCTM_BUILDNUMBER:
       return service.getLatestSCTMBuildnumber(nodeId);
     default:
-      return -1;
+        return -1;
     }
+  }
+
+
+  private int getBuildNumberFromUpstreamBuild(Run<?, ?> run, TaskListener listener) {
+    if(run instanceof AbstractBuild<?,?>) {
+      Map<AbstractProject, Integer> upstreamBuilds = ((AbstractBuild<?,?>)run).getUpstreamBuilds();
+      if (!upstreamBuilds.isEmpty()) {
+        return getBuildNumberFromUpStreamProject(jobName, upstreamBuilds, listener);
+      }
+    }
+    if (isUseBranchName()) {
+      return getWorkflowJobBuildNumber(run.getCauses());
+    }
+    return findTriggerInCauses(run.getCauses(), jobName);
   }
 
 	private int findTriggerInCauses(List<Cause> causes, String project) {
@@ -317,6 +412,5 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     }
     return buildResults;
   }
-
 }
 

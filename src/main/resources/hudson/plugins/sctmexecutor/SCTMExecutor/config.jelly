@@ -24,6 +24,12 @@
     <f:entry title="${%SCTMExecutor.projectConf.property.label.ignoreSetupCleanup}" help="/plugin/SCTMExecutor/help-ignoreSetupCleanup.html">
       <f:checkbox field="ignoreSetupCleanup" value="${instance.ignoreSetupCleanup}" />
     </f:entry>
+    <f:entry title="${%SCTMExecutor.projectConf.property.label.useBranchName}">
+      <f:checkbox field="useBranchName" value="${instance.useBranchName}" />
+    </f:entry>
+    <f:entry title="${%SCTMExecutor.projectConf.property.label.branchName}">
+	  <f:textbox field="branchName" value="${instance.branchName}" />
+	</f:entry>
     <f:entry title="${%SCTMExecutor.projectConf.property.label.bnusage.title}" help="/plugin/SCTMExecutor/help-buildnumberusage.html">
     </f:entry>
     <f:radioBlock title="${%SCTMExecutor.projectConf.property.label.bnusage.dontcare}" name="buildNumberUsageOption" value="1" checked="${instance.buildNumberUsageOption=='1'}"/>

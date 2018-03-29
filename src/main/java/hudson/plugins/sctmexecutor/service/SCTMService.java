@@ -9,6 +9,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,9 +39,16 @@ import com.borland.sctm.ws.planning.PlanningServiceServiceLocator;
 import hudson.plugins.sctmexecutor.exceptions.SCTMException;
 
 public class SCTMService implements ISCTMService {
+  private static final String SCTM_SERVICE_ERR_COMMON_FATAL_ERROR = "SCTMService.err.commonFatalError";
   private static final int MAX_LOGONRETRYCOUNT = 3;
   private static final Logger LOGGER = Logger.getLogger("hudson.plugins.sctmservice");  //$NON-NLS-1$
-  
+
+  public static final String PROP_NAME = "PROP_NAME";
+  public static final String PROP_SOURCELABEL = "PROP_SOURCELABEL";
+  public static final String PROP_RUNEXCLUSIVE = "PROP_RUNEXCLUSIVE";
+  public static final int KIND_EXECUTIONDEFINITION = 3;
+  public static final int KIND_CONFIGURATIONSUITE = 4;
+
   private SystemService systemService;
   private ExecutionWebService execService;
   private MainEntities adminService;
@@ -58,14 +66,14 @@ public class SCTMService implements ISCTMService {
       this.user = user;
       this.pwd = pwd;
       this.projectId = projectId;
-      
+
       systemService = new SystemServiceServiceLocator().getsccsystem(new URL(serviceURL + "/sccsystem?wsdl")); //$NON-NLS-1$
       execService = new ExecutionWebServiceServiceLocator().gettmexecution(new URL(serviceURL + "/tmexecution?wsdl")); //$NON-NLS-1$
       adminService = new MainEntitiesServiceLocator().getsccentities(new URL(serviceURL+"/sccentities?wsdl")); //$NON-NLS-1$
       planningService = new PlanningServiceServiceLocator().gettmplanning(new URL(serviceURL+"/tmplanning?wsdl")); //$NON-NLS-1$
       performerService = new PerformerServiceServiceLocator().gettmperformer(new URL(serviceURL+"/tmperformer?wsdl")); //$NON-NLS-1$
       serviceExchangeURL = String.format("%sExchange?hid=%s", serviceURL, "SilkPerformer"); //$NON-NLS-1$ //$NON-NLS-2$
-      
+
       logon();
     } catch (MalformedURLException e) {
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
@@ -75,7 +83,7 @@ public class SCTMService implements ISCTMService {
       throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.urlOrServiceBroken"), serviceURL)); //$NON-NLS-1$
     } catch (RemoteException e) {
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -99,7 +107,7 @@ public class SCTMService implements ISCTMService {
           throw new SCTMException(Messages.getString("SCTMService.err.accessDenied")); //$NON-NLS-1$
         }
         else {
-          throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+          throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
         }
       }
     }
@@ -114,7 +122,7 @@ public class SCTMService implements ISCTMService {
   }
 
   private Collection<ExecutionHandle> convertToList(ExecutionHandle[] handles) {
-    Collection<ExecutionHandle> runs = new ArrayList<ExecutionHandle>(handles.length);
+    Collection<ExecutionHandle> runs = new ArrayList<>(handles.length);
     for (ExecutionHandle handle : handles) {
       runs.add(handle);
     }
@@ -159,7 +167,7 @@ public class SCTMService implements ISCTMService {
         return start(executionId);
       }
       LOGGER.log(Level.WARNING, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -176,7 +184,7 @@ public class SCTMService implements ISCTMService {
         return start(executionId, buildNumber);
       }
       LOGGER.log(Level.WARNING, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -193,7 +201,7 @@ public class SCTMService implements ISCTMService {
         return isFinished(handle);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -209,7 +217,7 @@ public class SCTMService implements ISCTMService {
         return getExecutionResult(handle);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -228,7 +236,7 @@ public class SCTMService implements ISCTMService {
         addBuildNumberIfNotExists(nodeId, buildNumber);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -250,7 +258,7 @@ public class SCTMService implements ISCTMService {
         return buildNumberExists(productName, version, buildNumber);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -280,7 +288,7 @@ public class SCTMService implements ISCTMService {
         return getLatestSCTMBuildnumber(nodeId);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -288,13 +296,13 @@ public class SCTMService implements ISCTMService {
   public String getExecDefinitionName(int execDefId) throws SCTMException {
     try {
       ExecutionNode node = getExecDefNode(execDefId);
-      return getExecutionNodePropertyValue(node, "PROP_NAME");   //$NON-NLS-1$
+      return getExecutionNodePropertyValue(node, PROP_NAME);   //$NON-NLS-1$
     } catch (RemoteException e) {
       if (handleLostSessionException(e)) {
         return getExecDefinitionName(execDefId);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -309,7 +317,7 @@ public class SCTMService implements ISCTMService {
         return getAllVersions(execDefId);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
     return Arrays.asList(versions);
   }
@@ -323,7 +331,7 @@ public class SCTMService implements ISCTMService {
         return getResultFiles(testDefRunId);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
-      throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
     }
   }
 
@@ -331,7 +339,7 @@ public class SCTMService implements ISCTMService {
   public InputStream loadResultFile(int fileId) {
     try {
       URL url = new URL(String.format("%s&sid=%s&rfid=%s", serviceExchangeURL, sessionId, fileId)); //$NON-NLS-1$
-      
+
       HttpClient client = new HttpClient();
       HttpMethod get = new GetMethod(url.toExternalForm());
       client.executeMethod(get);
@@ -355,7 +363,64 @@ public class SCTMService implements ISCTMService {
         return getProductName(nodeId);
       }
       LOGGER.log(Level.SEVERE, e.getMessage(), e);
+      throw new SCTMException(MessageFormat.format(Messages.getString(SCTM_SERVICE_ERR_COMMON_FATAL_ERROR), e.getMessage())); //$NON-NLS-1$
+    }
+  }
+
+  private String getPropertyValue(String propertyId, PropertyValue[] propertyValues) {
+    for (PropertyValue propertyValue : propertyValues) {
+      if (propertyValue.getPropertyID().equals(propertyId)) {
+        return propertyValue.getValue();
+      }
+    }
+    return null;
+  }
+
+  public int getBranchExecutionId(String branchName, int configurationSuiteId) throws SCTMException {
+    try {
+      ExecutionNode suite = execService.getNode(sessionId, configurationSuiteId);
+      if (suite == null || suite.getKind() != KIND_CONFIGURATIONSUITE) {
+        throw new IllegalArgumentException("No configuration suite with id " + configurationSuiteId + " was found. Ensure the node exists and the type is configuration suite.");
+      }
+      ExecutionNode templateNode = null;
+      for (ExecutionNode executionNode : execService.getChildNodes(sessionId, configurationSuiteId)) {
+        String sourceLabel = getPropertyValue(PROP_SOURCELABEL, executionNode.getPropertyValues());
+        if (branchName.equals(getPropertyValue(PROP_NAME, executionNode.getPropertyValues())) || branchName.equals("master") && sourceLabel == null) {
+          return executionNode.getId();
+        }
+        if (sourceLabel == null) {
+          templateNode = executionNode;
+        }
+      }
+      if (templateNode == null) {
+        throw new IllegalArgumentException("No configuration without a source label found in suite with id " + configurationSuiteId + ". This is needed as template for the generated branch configurations.");
+      }
+      // create new
+      ExecutionNode node = templateNode;
+      List<PropertyValue> properties = new ArrayList<>();
+      addProperty(branchName, KIND_EXECUTIONDEFINITION, properties, PROP_NAME);
+      addProperty(branchName, KIND_EXECUTIONDEFINITION, properties, PROP_SOURCELABEL);
+      addProperty(getPropertyValue(PROP_RUNEXCLUSIVE, templateNode.getPropertyValues()), KIND_EXECUTIONDEFINITION, properties, PROP_RUNEXCLUSIVE);
+      node.setPropertyValues(properties.toArray(new PropertyValue[properties.size()]));
+      int newExecPlanId = execService.addNode(sessionId, node, configurationSuiteId);
+      execService.setKeywords(sessionId, newExecPlanId, execService.getKeywords(sessionId, templateNode.getId()));
+
+      System.out.println("Created new execution plan with id " + newExecPlanId + " and name " + branchName);
+      return execService.getNode(sessionId, newExecPlanId).getId();
+    } catch (RemoteException e) {
+      LOGGER.log(Level.SEVERE, e.getMessage(), e);
       throw new SCTMException(MessageFormat.format(Messages.getString("SCTMService.err.commonFatalError"), e.getMessage())); //$NON-NLS-1$
     }
+  }
+
+  private void addProperty(String value, int nodeKind, List<PropertyValue> properties, String propertyId)
+      throws RemoteException {
+    PropertyValue propertyValue = new PropertyValue();
+    propertyValue.setPropertyTypeID(execService.getPropertyInfo(sessionId, nodeKind, propertyId).getPropertyTypeId());
+    propertyValue.setPropertyID(propertyId);
+    propertyValue.setName(propertyId);
+    propertyValue.setValue(value);
+    propertyValue.setType(execService.getPropertyInfo(sessionId, nodeKind, propertyId).getType());
+    properties.add(propertyValue);
   }
 }
