@@ -24,6 +24,7 @@ import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
+import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.Cause.UpstreamCause;
@@ -340,10 +341,19 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     }
   }
 
+  int getBuildNumberFromLatestBuild(String project) {
+    Item jobItem = Jenkins.getInstance().getItemByFullName(project);
+    if(jobItem instanceof Job) {
+      Job job = (Job)jobItem;
+      return job.getLastBuild().number;
+    }
 
-  private int getBuildNumberFromUpstreamBuild(Run<?, ?> run, TaskListener listener) {
+    return -1;
+  }
+
+  int getBuildNumberFromUpstreamBuild(Run<?, ?> run, TaskListener listener) {
     if(run instanceof AbstractBuild<?,?>) {
-      Map<AbstractProject, Integer> upstreamBuilds = ((AbstractBuild<?,?>)run).getUpstreamBuilds();
+      Map<AbstractProject, Integer> upstreamBuilds = ((AbstractBuild<?,?>)run).getTransitiveUpstreamBuilds();
       if (!upstreamBuilds.isEmpty()) {
         return getBuildNumberFromUpStreamProject(jobName, upstreamBuilds, listener);
       }
