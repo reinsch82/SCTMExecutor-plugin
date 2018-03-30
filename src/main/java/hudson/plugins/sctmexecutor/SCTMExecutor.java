@@ -23,6 +23,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Cause;
 import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.Cause.UpstreamCause;
@@ -61,7 +62,7 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
   private String specificUser;
   private Secret specificPassword;
   private boolean useBranchName;
-  private String branchName;
+  private String branchName = "";
 
   @DataBoundConstructor
   public SCTMExecutor(int projectId, String execDefIds) {
@@ -261,21 +262,17 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     return execDefId;
   }
 
-  private String getBranchName(List<Cause> causes) {
+  String getBranchName(List<Cause> causes) {
     if(!branchName.isEmpty()) {
       return branchName;
     }
     if (isUseBranchName()) {
-      WorkflowJob workflowJob = getWorkflowJob(causes);
-      if (workflowJob != null) {
-        BranchJobProperty property = (BranchJobProperty) workflowJob.getProperty(BranchJobProperty.class.getName());
-        return property.getBranch().getName();
-      }
+      return getWorkflowJobBranchName(causes);
     }
     return "";
   }
 
-  private WorkflowJob getWorkflowJob(List<Cause> causes) {
+  private String getWorkflowJobBranchName(List<Cause> causes) {
     for (Cause cause : causes) {
       if (cause instanceof UpstreamCause) {
         UpstreamCause usCause = (UpstreamCause) cause;
@@ -284,16 +281,16 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
         if (itemByFullName instanceof WorkflowJob) {
           WorkflowJob wfJob = (WorkflowJob) itemByFullName;
 
-          if (wfJob.getParent() instanceof WorkflowMultiBranchProject) {
-            return wfJob;
+          ItemGroup parent = wfJob.getParent();
+          if (parent instanceof WorkflowMultiBranchProject) {
+            BranchJobProperty property = (BranchJobProperty) wfJob.getProperty(BranchJobProperty.class.getName());
+            return property.getBranch().getName();
           }
         }
-        else {
-          return getWorkflowJob(usCause.getUpstreamCauses());
-        }
+        return getWorkflowJobBranchName(usCause.getUpstreamCauses());
       }
     }
-    return null;
+    return "";
   }
 
   private int getWorkflowJobBuildNumber(List<Cause> causes) {

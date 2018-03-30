@@ -398,9 +398,9 @@ public class SCTMService implements ISCTMService {
       // create new
       ExecutionNode node = templateNode;
       List<PropertyValue> properties = new ArrayList<>();
-      addProperty(branchName, KIND_EXECUTIONDEFINITION, properties, PROP_NAME);
-      addProperty(branchName, KIND_EXECUTIONDEFINITION, properties, PROP_SOURCELABEL);
-      addProperty(getPropertyValue(PROP_RUNEXCLUSIVE, templateNode.getPropertyValues()), KIND_EXECUTIONDEFINITION, properties, PROP_RUNEXCLUSIVE);
+      properties.add(createProperty(branchName, KIND_EXECUTIONDEFINITION, PROP_NAME));
+      properties.add(createProperty(branchName, KIND_EXECUTIONDEFINITION, PROP_SOURCELABEL));
+      properties.add(createProperty(getPropertyValue(PROP_RUNEXCLUSIVE, templateNode.getPropertyValues()), KIND_EXECUTIONDEFINITION, PROP_RUNEXCLUSIVE));
       node.setPropertyValues(properties.toArray(new PropertyValue[properties.size()]));
       int newExecPlanId = execService.addNode(sessionId, node, configurationSuiteId);
       execService.setKeywords(sessionId, newExecPlanId, execService.getKeywords(sessionId, templateNode.getId()));
@@ -413,14 +413,13 @@ public class SCTMService implements ISCTMService {
     }
   }
 
-  private void addProperty(String value, int nodeKind, List<PropertyValue> properties, String propertyId)
-      throws RemoteException {
+  private PropertyValue createProperty(String value, int nodeKind, String propertyId) throws RemoteException {
     PropertyValue propertyValue = new PropertyValue();
     propertyValue.setPropertyTypeID(execService.getPropertyInfo(sessionId, nodeKind, propertyId).getPropertyTypeId());
     propertyValue.setPropertyID(propertyId);
     propertyValue.setName(propertyId);
     propertyValue.setValue(value);
     propertyValue.setType(execService.getPropertyInfo(sessionId, nodeKind, propertyId).getType());
-    properties.add(propertyValue);
+    return propertyValue;
   }
 }
