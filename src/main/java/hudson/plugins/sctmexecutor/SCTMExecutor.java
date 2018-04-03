@@ -7,6 +7,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +29,7 @@ import hudson.model.Cause;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.Job;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.Cause.UpstreamCause;
@@ -204,7 +209,9 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
 
   @Override
   public void perform(Run<?, ?> run, FilePath filePath, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
-    perform(run, filePath, listener);
+    if(!perform(run, filePath, listener)) {
+      run.setResult(Result.FAILURE);
+    }
   }
 
   @Override
@@ -217,43 +224,48 @@ public final class SCTMExecutor extends Builder implements SimpleBuildStep {
     SCTMExecutorDescriptor descriptor = getDescriptor();
     String serviceURL = descriptor.getServiceURL();
     List<Integer> execDefIdList = Utils.csvToIntList(execDefIds);
-    boolean succeed;
+    boolean succeed = true;
     try {
       ISCTMService service = createSctmService(projectId);
       listener.getLogger().println(Messages.getString("SCTMExecutor.log.successfulLogin")); //$NON-NLS-1$
       FilePath resultDir = createResultDir(build.number, rootDir, listener);
 
-      Collection<Thread> executions = new ArrayList<>(execDefIdList.size());
+      Collection<Future<Boolean>> executions = new ArrayList<>(execDefIdList.size());
       int buildNumber = getOrAddBuildNumber(build, listener, execDefIdList.get(0), service);
+      ExecutorService threadPool = Executors.newCachedThreadPool();
       for (Integer execDefId : execDefIdList) {
-        ITestResultWriter resultWriter = null;
-        if (collectResults) {
-          resultWriter = new SCTMResultWriter(resultDir, service, ignoreSetupCleanup);
-        }
+        final ITestResultWriter resultWriter = createResultWriter(service, resultDir);
         int id = getTriggerId(service, getBranchName(build.getCauses()), execDefId);
-        Runnable resultCollector = new ExecutionRunnable(service, id, buildNumber, resultWriter, listener
-            .getLogger());
+        executions.add(threadPool
+            .submit(new ExecutionRunnable(service, id, buildNumber, resultWriter, listener)::startExecution));
 
-        Thread t = new Thread(resultCollector);
-        executions.add(t);
-        t.start();
         if (delay > 0 && execDefIdList.size() > 1) {
           Thread.sleep(delay * 1000L);
         }
       }
 
-      for (Thread t : executions) {
-        t.join();
+      for (Future<Boolean> t : executions) {
+        succeed = succeed && t.get();
       }
-
-      succeed = true;
     } catch (SCTMException e) {
       LOGGER.log(Level.SEVERE, MessageFormat.format(
           "Creating a remote connection to SCTM host ({0}) failed.", serviceURL), e); //$NON-NLS-1$
       listener.fatalError(e.getMessage());
       succeed = false;
     }
+    catch (ExecutionException e) {
+      LOGGER.log(Level.SEVERE, "Execution failed", e); //$NON-NLS-1$
+      succeed = false;
+    }
     return contOnErr || succeed;
+  }
+
+  private ITestResultWriter createResultWriter(ISCTMService service, FilePath resultDir) {
+    ITestResultWriter resultWriter = null;
+    if (collectResults) {
+      resultWriter = new SCTMResultWriter(resultDir, service, ignoreSetupCleanup);
+    }
+    return resultWriter;
   }
 
   private int getTriggerId(ISCTMService service, String branchName, Integer execDefId) throws SCTMException {
